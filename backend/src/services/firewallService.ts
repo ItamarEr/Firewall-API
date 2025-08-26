@@ -1,7 +1,9 @@
+
 import { FirewallRule, FirewallRuleType, FirewallRuleMode } from '../models/firewallRule';
 import { db } from '../config/drizzle';
 import { firewall_rules } from '../config/schema';
 import { eq, and } from 'drizzle-orm';
+import logger from '../config/Logger';
 
 function isValidIP(ip: string): boolean {
   const parts = ip.split(".");
@@ -27,15 +29,19 @@ function isValidURL(url: string): boolean {
   }
 }
 
+
 export async function addRules(values: (string|number)[], type: FirewallRuleType, mode: FirewallRuleMode): Promise<FirewallRule[]> {
   for (const value of values) {
     if (type === 'ip' && (typeof value !== 'string' || !isValidIP(value))) {
+      logger.warn(`Invalid IP: ${value}`);
       throw new Error(`Invalid IP address: ${value}`);
     }
     if (type === 'port' && (typeof value !== 'number' || !isValidPort(value))) {
+      logger.warn(`Invalid port: ${value}`);
       throw new Error(`Invalid port: ${value}`);
     }
     if (type === 'url' && (typeof value !== 'string' || !isValidURL(value))) {
+      logger.warn(`Invalid URL: ${value}`);
       throw new Error(`Invalid URL: ${value}`);
     }
   }
@@ -44,8 +50,10 @@ export async function addRules(values: (string|number)[], type: FirewallRuleType
     const result = await db.insert(firewall_rules).values({ value: String(value), type, mode, active: true }).returning();
     if (result.length > 0) inserted.push(result[0] as FirewallRule);
   }
+  logger.debug(`Rules added: ${inserted.length}`);
   return inserted;
 }
+
 
 export async function removeRules(values: (string|number)[], type: FirewallRuleType, mode: FirewallRuleMode): Promise<number[]> {
   const removedIds: number[] = [];
@@ -59,6 +67,7 @@ export async function removeRules(values: (string|number)[], type: FirewallRuleT
       .returning({ id: firewall_rules.id });
     if (deleted.length > 0) removedIds.push(deleted[0].id);
   }
+  logger.debug(`Rules removed: ${removedIds.length}`);
   return removedIds;
 }
 

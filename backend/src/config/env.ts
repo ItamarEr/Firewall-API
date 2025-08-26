@@ -1,3 +1,4 @@
+
 import 'dotenv/config';
 import { z } from 'zod';
 
@@ -26,6 +27,7 @@ const parsed = envSchema.safeParse({
   DATABASE_URI_DEV: process.env.DATABASE_URI_DEV,
   DATABASE_URI_PRODUCTION: process.env.DATABASE_URI_PRODUCTION,
 });
+
 
 if (!parsed.success) {
   console.error('Invalid environment variables:', parsed.error.format());

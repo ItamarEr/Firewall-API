@@ -1,5 +1,7 @@
+
 import postgres from 'postgres';
 import { config } from '../config/env';
+import logger from '../config/Logger';
 
 const client = postgres(config.DATABASE_URI);
 
@@ -15,9 +17,9 @@ async function initDB() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `;
-    console.log('Database initialized!');
+  logger.info('Database initialized!');
   } catch (err) {
-    console.error('Error initializing database:', (err as Error).message);
+  logger.error('Error initializing database:', (err as Error).message);
   } finally {
     await client.end();
   }
