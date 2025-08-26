@@ -1,17 +1,11 @@
-import { Pool } from 'pg';
+import postgres from 'postgres';
+import { config } from '../config/env';
 
-const pool = new Pool({
-  user: process.env.PGUSER,
-  host: process.env.PGHOST,
-  database: process.env.PGDATABASE,
-  password: process.env.PGPASSWORD,
-  port: Number(process.env.PGPORT) || 5432,
-});
+const client = postgres(config.DATABASE_URI);
 
 async function initDB() {
-  const client = await pool.connect();
   try {
-    await client.query(`
+    await client`
       CREATE TABLE IF NOT EXISTS firewall_rules (
         id SERIAL PRIMARY KEY,
         value VARCHAR(255) NOT NULL,
@@ -20,13 +14,12 @@ async function initDB() {
         active BOOLEAN DEFAULT true,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
-    `);
+    `;
     console.log('Database initialized!');
   } catch (err) {
-    console.error('Error initializing database:', err);
+    console.error('Error initializing database:', (err as Error).message);
   } finally {
-    client.release();
-    pool.end();
+    await client.end();
   }
 }
 
