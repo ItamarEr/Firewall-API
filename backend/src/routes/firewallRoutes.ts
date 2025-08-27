@@ -1,7 +1,8 @@
 
 import express from 'express';
 import { addRules, removeRules, getAllRules, updateRuleStatus } from '../services/firewallService';
-import logger from '../config/Logger';
+import LoggerSingleton from '../config/Logger';
+const logger = LoggerSingleton.getInstance();
 
 const router = express.Router();
 
@@ -24,7 +25,11 @@ router.delete('/ip', async (req, res) => {
   logger.info('DELETE /ip');
   const { values, mode } = req.body;
   try {
-    await removeRules(values, 'ip', mode);
+    const removed = await removeRules(values, 'ip', mode);
+    if (!removed || removed.length === 0) {
+      logger.error('Failed to remove IP rules: no rules removed');
+      return res.status(400).json({ error: 'Remove failed' });
+    }
     logger.info('IP rules removed');
     res.json({ type: 'ip', mode, values, status: 'success' });
   } catch (err) {
@@ -52,7 +57,11 @@ router.delete('/url', async (req, res) => {
   logger.info('DELETE /url');
   const { values, mode } = req.body;
   try {
-    await removeRules(values, 'url', mode);
+    const removed = await removeRules(values, 'url', mode);
+    if (!removed || removed.length === 0) {
+      logger.error('Failed to remove URL rules: no rules removed');
+      return res.status(400).json({ error: 'Remove failed' });
+    }
     logger.info('URL rules removed');
     res.json({ type: 'url', mode, values, status: 'success' });
   } catch (err) {
@@ -80,7 +89,11 @@ router.delete('/port', async (req, res) => {
   logger.info('DELETE /port');
   const { values, mode } = req.body;
   try {
-    await removeRules(values, 'port', mode);
+    const removed = await removeRules(values, 'port', mode);
+    if (!removed || removed.length === 0) {
+      logger.error('Failed to remove port rules: no rules removed');
+      return res.status(400).json({ error: 'Remove failed' });
+    }
     logger.info('Port rules removed');
     res.json({ type: 'port', mode, values, status: 'success' });
   } catch (err) {
@@ -116,6 +129,10 @@ router.put('/rules', async (req, res) => {
     }
     if (ports && ports.ids) {
       updated = updated.concat(await updateRuleStatus('port', ports.mode, ports.ids, ports.active));
+    }
+    if (updated.length === 0) {
+      logger.error('Failed to update rules: no rules updated');
+      return res.status(400).json({ error: 'Update failed' });
     }
     logger.info('Rules updated');
     res.json({ updated });

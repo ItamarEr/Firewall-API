@@ -1,7 +1,8 @@
-
 import postgres from 'postgres';
 import { config } from '../config/env';
-import logger from '../config/Logger';
+
+import LoggerSingleton from '../config/Logger';
+const logger = LoggerSingleton.getInstance();
 
 const client = postgres(config.DATABASE_URI);
 

@@ -34,15 +34,28 @@ try {
   console.error('Logger initialization failed, falling back to console:', err);
 }
 
-const logger = winston.createLogger({
-  level,
-  transports,
-  exitOnError: false,
-});
+class LoggerSingleton {
+  private static instance: winston.Logger;
+
+  private constructor() {}
+
+  public static getInstance(): winston.Logger {
+    if (!LoggerSingleton.instance) {
+      LoggerSingleton.instance = winston.createLogger({
+        level: 'info',
+        format: winston.format.json(),
+        transports: [
+          new winston.transports.Console({ format: winston.format.simple() }),
+        ],
+      });
+    }
+    return LoggerSingleton.instance;
+  }
+}
 
 // Overwrite console.log to use logger
 console.log = (...args: any[]) => {
-  logger.info(args.map(String).join(' '));
+  LoggerSingleton.getInstance().info(args.map(String).join(' '));
 };
 
-export default logger;
+export default LoggerSingleton;
