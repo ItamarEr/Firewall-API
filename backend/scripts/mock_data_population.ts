@@ -68,8 +68,13 @@ async function populateMockData() {
   rules.push({ value: 'example.com', type: 'url', mode: 'blacklist', active: true });
   rules.push({ value: 'ftp.example.com', type: 'url', mode: 'whitelist', active: true });
 
-  await db.insert(firewall_rules).values(rules);
-  console.log(`Inserted ${rules.length} mock firewall rules.`);
+  try {
+  await db!.insert(firewall_rules).values(rules);
+    console.log(`Inserted ${rules.length} mock firewall rules.`);
+  } catch (err) {
+    console.error('Error inserting mock firewall rules:', err);
+    throw err;
+  }
 }
 
 declare const require: any;

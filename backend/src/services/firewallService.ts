@@ -6,7 +6,8 @@ import LoggerSingleton from '../config/Logger';
 const logger = LoggerSingleton.getInstance();
 
 import DatabaseSingleton from '../config/drizzle';
-let db: any;
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+let db: PostgresJsDatabase<Record<string, unknown>> | undefined;
 async function initDatabase() {
   await DatabaseSingleton.dbReady;
   db = DatabaseSingleton.getInstance();
@@ -69,7 +70,7 @@ export async function addRules(values: (string|number)[], type: FirewallRuleType
         throw new Error(`Invalid URL: ${value}`);
       }
       // Duplicate check
-      const existing = await db.select().from(firewall_rules)
+  const existing = await db!.select().from(firewall_rules)
         .where(and(
           eq(firewall_rules.value, String(value)),
           eq(firewall_rules.type, type),
@@ -82,7 +83,7 @@ export async function addRules(values: (string|number)[], type: FirewallRuleType
     }
     const inserted: FirewallRule[] = [];
     for (const value of values) {
-      const result = await db.insert(firewall_rules).values({ value: String(value), type, mode, active: true }).returning();
+  const result = await db!.insert(firewall_rules).values({ value: String(value), type, mode, active: true }).returning();
       if (result.length > 0) inserted.push(result[0] as FirewallRule);
     }
     logger.debug(`Rules added: ${inserted.length}`);
@@ -97,7 +98,7 @@ export async function removeRules(values: (string|number)[], type: FirewallRuleT
   try {
     const removedIds: number[] = [];
     for (const value of values) {
-      const deleted = await db.delete(firewall_rules)
+  const deleted = await db!.delete(firewall_rules)
         .where(and(
           eq(firewall_rules.value, String(value)),
           eq(firewall_rules.type, type),
@@ -114,9 +115,15 @@ export async function removeRules(values: (string|number)[], type: FirewallRuleT
   }
 }
 
-export async function getAllRules(): Promise<any> {
+export type FirewallRulesGrouped = {
+  ips: { blacklist: {id: number, value: string | number}[], whitelist: {id: number, value: string | number}[] },
+  urls: { blacklist: {id: number, value: string | number}[], whitelist: {id: number, value: string | number}[] },
+  ports: { blacklist: {id: number, value: string | number}[], whitelist: {id: number, value: string | number}[] }
+};
+
+export async function getAllRules(): Promise<FirewallRulesGrouped> {
   try {
-    const rules = await db.select().from(firewall_rules);
+  const rules = await db!.select().from(firewall_rules);
     const result = {
       ips: { blacklist: [] as {id: number, value: string | number}[], whitelist: [] as {id: number, value: string | number}[] },
       urls: { blacklist: [] as {id: number, value: string | number}[], whitelist: [] as {id: number, value: string | number}[] },
@@ -139,7 +146,7 @@ export async function updateRuleStatus(type: FirewallRuleType, mode: FirewallRul
   try {
     const updated: FirewallRule[] = [];
     for (const id of ids) {
-      const result = await db.update(firewall_rules)
+  const result = await db!.update(firewall_rules)
         .set({ active })
         .where(and(
           eq(firewall_rules.id, id),

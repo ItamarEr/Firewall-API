@@ -1,10 +1,13 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import postgres, { Sql } from 'postgres';
 import { config } from './env';
+import LoggerSingleton from './Logger';
+const logger = LoggerSingleton.getInstance();
 
 class DatabaseSingleton {
-	private static client: any;
-	private static db: any;
+	private static client: Sql<{}>;
+	private static db: PostgresJsDatabase<Record<string, unknown>> | undefined;
 	private static ready = false;
 	private static readyPromiseResolve: (() => void) | null = null;
 	public static dbReady: Promise<void> = new Promise((resolve) => {
@@ -13,7 +16,8 @@ class DatabaseSingleton {
 
 	private constructor() {}
 
-	public static async connectWithRetry() {
+	public static async connectWithRetry(retryCount = 0) {
+		const maxRetries = config.MAX_DB_RETRIES;
 		try {
 			DatabaseSingleton.client = postgres(config.DATABASE_URI);
 			// Test connection
@@ -21,14 +25,19 @@ class DatabaseSingleton {
 			DatabaseSingleton.db = drizzle(DatabaseSingleton.client);
 			DatabaseSingleton.ready = true;
 			if (DatabaseSingleton.readyPromiseResolve) DatabaseSingleton.readyPromiseResolve();
-			console.log('Database connection established.');
+			logger.info('Database connection established.');
 		} catch (err) {
-			console.error('Database connection failed, retrying...', err);
-			setTimeout(DatabaseSingleton.connectWithRetry, Number(process.env.DB_CONNECTION_INTERVAL) || 5000);
+			if (retryCount < maxRetries) {
+				logger.error(`Database connection failed, retrying (${retryCount + 1}/${maxRetries})...`, err);
+				setTimeout(() => DatabaseSingleton.connectWithRetry(retryCount + 1), config.DB_CONNECTION_INTERVAL);
+			} else {
+				logger.error('Database connection failed. Retry limit reached.', err);
+				process.exit(1);
+			}
 		}
 	}
 
-	public static getInstance() {
+	public static getInstance(): PostgresJsDatabase<Record<string, unknown>> | undefined {
 		return DatabaseSingleton.db;
 	}
 }

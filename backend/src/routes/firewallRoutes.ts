@@ -2,6 +2,7 @@
 import express from 'express';
 import { addRules, removeRules, getAllRules, updateRuleStatus } from '../services/firewallService';
 import LoggerSingleton from '../config/Logger';
+import type { FirewallRule } from '../types/firewallRule';
 const logger = LoggerSingleton.getInstance();
 
 const router = express.Router();
@@ -119,7 +120,8 @@ router.get('/rules', async (req, res) => {
 router.put('/rules', async (req, res) => {
   logger.info('PUT /rules');
   const {urls, ports, ips } = req.body;
-  let updated: any[] = [];
+
+  let updated: FirewallRule[] = [];
   try {
     if (ips && ips.ids) {
       updated = updated.concat(await updateRuleStatus('ip', ips.mode, ips.ids, ips.active));

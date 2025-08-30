@@ -4,17 +4,19 @@ import request from 'supertest';
 import app from '../src/app';
 import { firewall_rules } from '../src/config/schema';
 import DatabaseSingleton from '../src/config/drizzle';
-let db: any;
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+let db: PostgresJsDatabase<Record<string, unknown>> | undefined;
 
 beforeAll(async () => {
   // Clean and populate DB with mock data
   await DatabaseSingleton.dbReady;
   db = DatabaseSingleton.getInstance();
-  await db.delete(firewall_rules);
+  await db!.delete(firewall_rules);
   const mockData = require('../scripts/mock_data_population');
   if (typeof mockData.populateMockData === 'function') {
     await mockData.populateMockData();
   }
+  // Start server only after DB is ready and mock data is populated
   server = app.listen(3001);
 });
 
@@ -24,7 +26,6 @@ describe('Firewall API Endpoints', () => {
       const res = await request(app)
         .post('/api/firewall/ip')
         .send({ values: ['8.8.8.8'], mode: 'blacklist' });
-        console.log('Test response:', res.statusCode, res.body);
       expect(res.statusCode).toBe(200);
       expect(res.body.status).toBe('success');
     });
@@ -116,7 +117,7 @@ describe('Firewall API Endpoints', () => {
       res = await request(app)
         .get('/api/firewall/rules');
       expect(res.statusCode).toBe(200);
-      const ruleId = res.body.ips.whitelist.find((r: any) => r.value === '10.10.10.10')?.id;
+  const ruleId = res.body.ips.whitelist.find((r: { id: number, value: string | number }) => r.value === '10.10.10.10')?.id;
       expect(ruleId).toBeDefined();
       res = await request(app)
         .put('/api/firewall/rules')
@@ -180,7 +181,7 @@ describe('Firewall API Endpoints', () => {
         .send({ values: [5555], mode: 'whitelist' });
       const getRes = await request(app)
         .get('/api/firewall/rules');
-      const ruleId = getRes.body.ports.whitelist.find((r:any) => r.value === '5555')?.id;
+  const ruleId = getRes.body.ports.whitelist.find((r: { id: number, value: string | number }) => r.value === '5555')?.id;
       expect(ruleId).toBeDefined();
       const res = await request(app)
         .put('/api/firewall/rules')
@@ -193,7 +194,7 @@ describe('Firewall API Endpoints', () => {
         .send({ values: ['update.com'], mode: 'whitelist' });
       const getRes = await request(app)
         .get('/api/firewall/rules');
-      const ruleId = getRes.body.urls.whitelist.find((r:any) => r.value === 'update.com')?.id;
+  const ruleId = getRes.body.urls.whitelist.find((r: { id: number, value: string | number }) => r.value === 'update.com')?.id;
       expect(ruleId).toBeDefined();
       const res = await request(app)
         .put('/api/firewall/rules')
@@ -257,9 +258,6 @@ afterAll(async () => {
   if (server && typeof server.close === 'function') {
     await new Promise((resolve) => server.close(resolve));
   }
-  // Close postgres-js client connection
-  if (db && db.$client && typeof db.$client.end === 'function') {
-    await db.$client.end();
-  }
+
   console.log('All tests completed successfully!');
 });

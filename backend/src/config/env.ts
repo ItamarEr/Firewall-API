@@ -18,6 +18,14 @@ const envSchema = z.object({
   ),
   DATABASE_URI_DEV: z.string().url(),
   DATABASE_URI_PRODUCTION: z.string().url(),
+  DB_CONNECTION_INTERVAL: z.string().transform(Number).refine(
+    (interval) => Number.isInteger(interval) && interval > 0,
+    { message: 'DB_CONNECTION_INTERVAL must be a positive integer' }
+  ),
+  MAX_DB_RETRIES: z.string().transform(Number).refine(
+    (retries) => Number.isInteger(retries) && retries > 0,
+    { message: 'MAX_DB_RETRIES must be a positive integer' }
+  ),
 });
 
 // Parse and validate environment variables
@@ -26,6 +34,8 @@ const parsed = envSchema.safeParse({
   PORT: process.env.PORT,
   DATABASE_URI_DEV: process.env.DATABASE_URI_DEV,
   DATABASE_URI_PRODUCTION: process.env.DATABASE_URI_PRODUCTION,
+  DB_CONNECTION_INTERVAL: process.env.DB_CONNECTION_INTERVAL,
+  MAX_DB_RETRIES: process.env.MAX_DB_RETRIES,
 });
 
 
@@ -46,4 +56,6 @@ export const config = {
   DATABASE_URI,
   DATABASE_URI_DEV: env.DATABASE_URI_DEV,
   DATABASE_URI_PRODUCTION: env.DATABASE_URI_PRODUCTION,
+  DB_CONNECTION_INTERVAL: env.DB_CONNECTION_INTERVAL,
+  MAX_DB_RETRIES: env.MAX_DB_RETRIES,
 };
