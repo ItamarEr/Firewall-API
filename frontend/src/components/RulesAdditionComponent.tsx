@@ -70,8 +70,6 @@ function isValidURL(url: string): boolean {
   }
 
   async function handleAddRule() {
-    console.log('Adding rule:', { type, mode, value });
-    console.log('URL:',  `${process.env.NEXT_PUBLIC_SERVER_URL}/api/firewall/${type}`);
     const validationError = validateRule();
     if (validationError) {
       setError(validationError);

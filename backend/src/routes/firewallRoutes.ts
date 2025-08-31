@@ -1,11 +1,34 @@
 
 import express from 'express';
 import { addRules, removeRules, getAllRules, updateRuleStatus } from '../services/firewallService';
-import LoggerSingleton from '../config/Logger';
+import LoggerSingleton, { getLastDevLogs } from '../config/Logger';
+import { config } from '../config/env';
+import fs from 'fs';
 import type { FirewallRule } from '../types/firewallRule';
-const logger = LoggerSingleton.getInstance();
 
+const logger = LoggerSingleton.getInstance();
 const router = express.Router();
+
+// GET /logs - returns last 50 logs
+router.get('/logs', async (req, res) => {
+  try {
+    if (config.ENV === 'production') {
+      // Read last 50 lines from app.log
+      const logFile = 'app.log';
+      if (!fs.existsSync(logFile)) return res.json({ logs: [] });
+      const data = fs.readFileSync(logFile, 'utf-8');
+      const lines = data.trim().split('\n');
+      const lastLogs = lines.slice(-50);
+      return res.json({ logs: lastLogs });
+    } else {
+      // Return last 50 dev logs from memory
+      return res.json({ logs: getLastDevLogs(50) });
+    }
+  } catch (err) {
+    logger.error('Failed to fetch logs', err);
+    return res.status(500).json({ error: 'Failed to fetch logs' });
+  }
+});
 
 
 router.post('/ip', async (req, res) => {

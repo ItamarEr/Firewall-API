@@ -1,4 +1,5 @@
 import winston from 'winston';
+import Transport from 'winston-transport';
 import { config } from './env';
 
 const { ENV } = config;
@@ -12,8 +13,26 @@ const logFormat = winston.format.combine(
   })
 );
 
+
 let transports: winston.transport[] = [];
 let level = 'debug';
+
+// In-memory log array for dev
+const devLogs: string[] = [];
+const MAX_DEV_LOGS = 200;
+
+// Custom Winston transport for devLogs (Winston v3+)
+class DevLogTransport extends Transport {
+  log(info: any, callback: () => void) {
+    setImmediate(() => {
+      const { timestamp, level, message, stack } = info;
+      const msg = `${timestamp || new Date().toISOString()} [${level.toUpperCase()}] ${message}${stack ? '\n' + stack : ''}`;
+      devLogs.push(msg);
+      if (devLogs.length > MAX_DEV_LOGS) devLogs.shift();
+    });
+    callback();
+  }
+}
 
 try {
   if (ENV === 'production') {
@@ -25,6 +44,7 @@ try {
     transports.push(
       new winston.transports.Console({ format: logFormat })
     );
+    transports.push(new DevLogTransport());
     level = 'debug';
   }
 } catch (err) {
@@ -36,26 +56,59 @@ try {
 
 class LoggerSingleton {
   private static instance: winston.Logger;
+  private static initialized = false;
 
   private constructor() {}
 
   public static getInstance(): winston.Logger {
     if (!LoggerSingleton.instance) {
       LoggerSingleton.instance = winston.createLogger({
-        level: 'info',
-        format: winston.format.json(),
-        transports: [
-          new winston.transports.Console({ format: winston.format.simple() }),
-        ],
+        level,
+        format: logFormat,
+        transports,
       });
+      if (!LoggerSingleton.initialized) {
+        // Overwrite console methods
+        console.log = (...args: any[]) => {
+          LoggerSingleton.instance.info(args.map(String).join(' '));
+          if (ENV !== 'production') {
+            const msg = `[${new Date().toISOString()}] [INFO] ${args.map(String).join(' ')}`;
+            devLogs.push(msg);
+            if (devLogs.length > MAX_DEV_LOGS) devLogs.shift();
+          }
+        };
+        console.error = (...args: any[]) => {
+          LoggerSingleton.instance.error(args.map(String).join(' '));
+          if (ENV !== 'production') {
+            const msg = `[${new Date().toISOString()}] [ERROR] ${args.map(String).join(' ')}`;
+            devLogs.push(msg);
+            if (devLogs.length > MAX_DEV_LOGS) devLogs.shift();
+          }
+        };
+        console.warn = (...args: any[]) => {
+          LoggerSingleton.instance.warn(args.map(String).join(' '));
+          if (ENV !== 'production') {
+            const msg = `[${new Date().toISOString()}] [WARN] ${args.map(String).join(' ')}`;
+            devLogs.push(msg);
+            if (devLogs.length > MAX_DEV_LOGS) devLogs.shift();
+          }
+        };
+        console.debug = (...args: any[]) => {
+          LoggerSingleton.instance.debug(args.map(String).join(' '));
+          if (ENV !== 'production') {
+            const msg = `[${new Date().toISOString()}] [DEBUG] ${args.map(String).join(' ')}`;
+            devLogs.push(msg);
+            if (devLogs.length > MAX_DEV_LOGS) devLogs.shift();
+          }
+        };
+        LoggerSingleton.initialized = true;
+      }
     }
     return LoggerSingleton.instance;
   }
 }
 
-// Overwrite console.log to use logger
-console.log = (...args: any[]) => {
-  LoggerSingleton.getInstance().info(args.map(String).join(' '));
-};
-
 export default LoggerSingleton;
+export function getLastDevLogs(n: number) {
+  return devLogs.slice(-n);
+}
