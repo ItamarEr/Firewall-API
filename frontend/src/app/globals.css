@@ -1,0 +1,78 @@
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background: #f8f9fa;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #222;
+  color: #fff;
+  padding: 0.75rem 2rem;
+}
+.navbar .logo {
+  width: 32px;
+  height: 32px;
+  margin-right: 1rem;
+}
+.navbar a {
+  color: #fff;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+.navbar a:hover {
+  background: #444;
+}
+
+.footer {
+  background: #222;
+  color: #fff;
+  padding: 1rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: auto;
+}
+
+.tab-content {
+  display: grid;
+  grid-template-columns: 1fr;
+  background: #fff;
+  padding: 2rem;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  min-height: 300px;
+}
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}

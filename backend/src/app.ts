@@ -1,7 +1,7 @@
 import express from 'express';
 import firewallRouter from './routes/firewallRoutes';
 import { config } from './config/env';
-
+import cors from 'cors';
 import LoggerSingleton from './config/Logger';
 const logger = LoggerSingleton.getInstance();
 
@@ -11,6 +11,7 @@ const db = DatabaseSingleton.getInstance();
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 app.use('/api/firewall', firewallRouter);
 
 // Only start the server after DB is ready
