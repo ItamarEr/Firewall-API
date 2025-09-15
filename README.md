@@ -56,7 +56,3 @@ The backend exposes endpoints under `/api/firewall` for managing rules. See `bac
 ## Environment Variables
 
 - See `backend/.env.example` and `frontend/.env` for required variables.
-
-## License
-
-MIT
